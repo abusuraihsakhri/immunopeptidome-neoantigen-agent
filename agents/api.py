@@ -4,7 +4,7 @@ FastAPI REST API Server for Immunopeptidome Neoantigen Agent.
 from typing import Dict, Any, List
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-from .base import AuditLogger, PHIGuard
+from .base import AuditLogger, PHIGuard, SecurityException, assert_no_phi
 from .models import SystemTaskPayload, ConsensusDossier
 from .supervisor import SystemSupervisor
 
@@ -19,6 +19,11 @@ app = FastAPI(
 
 class ChatRequest(BaseModel):
     query: str
+
+
+class ErrorResponse(BaseModel):
+    error: str
+    detail: str
 
 
 @app.get("/health")
@@ -37,8 +42,13 @@ def metrics():
 
 @app.post("/api/audit")
 def api_audit(payload: SystemTaskPayload):
-    dossier = supervisor.process_task(payload)
-    return dossier.to_dict()
+    try:
+        dossier = supervisor.process_task(payload)
+        return dossier.to_dict()
+    except SecurityException as e:
+        raise HTTPException(status_code=422, detail=f"PHI Guard Violation: {str(e)}")
+    except (ValueError, TypeError) as e:
+        raise HTTPException(status_code=400, detail=f"Invalid input: {str(e)}")
 
 
 @app.post("/api/chat")
@@ -46,6 +56,8 @@ def api_chat(req: ChatRequest):
     try:
         ans = supervisor.query_supervisory_chat(req.query)
         return {"response": ans}
+    except SecurityException as e:
+        raise HTTPException(status_code=422, detail=f"PHI Guard Violation: {str(e)}")
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 

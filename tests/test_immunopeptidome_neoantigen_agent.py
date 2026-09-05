@@ -23,6 +23,13 @@ def test_phi_guard_enforcement():
     PHIGuard.assert_no_phi("Analytical assay specimen KEY-001 optimal")
 
 
+def test_phi_guard_redaction():
+    redacted = PHIGuard.redact_phi("Contact patient at 555-123-4567 or MRN-12345")
+    assert "[REDACTED_IDENTIFIER]" in redacted
+    assert "555-123-4567" not in redacted
+    assert "MRN-12345" not in redacted
+
+
 def test_specialized_workers():
     # Worker 1: QC Invariant
     p1 = SystemTaskPayload(task_id="T1", target_identifier="KEY-01", primary_metric=35.0)
@@ -63,3 +70,42 @@ def test_supervisor_consensus_and_audit():
     assert main(["audit", "--task-id", "CLI-TEST-01"]) == 0
     assert main(["chat", "Explain", "specifications"]) == 0
     assert main(["verify-audit"]) == 0
+
+
+def test_supervisor_rejects_phi_in_task_id():
+    supervisor = SystemSupervisor(model_provider="mock")
+    payload = SystemTaskPayload(
+        task_id="Patient MRN-994827",
+        target_identifier="KEY-01",
+        primary_metric=12.0,
+        secondary_metric=4.0,
+        status_descriptor="NOMINAL"
+    )
+    with pytest.raises(SecurityException):
+        supervisor.process_task(payload)
+
+
+def test_supervisor_rejects_phi_in_target():
+    supervisor = SystemSupervisor(model_provider="mock")
+    payload = SystemTaskPayload(
+        task_id="TASK-01",
+        target_identifier="Patient John Doe",
+        primary_metric=12.0,
+        secondary_metric=4.0,
+        status_descriptor="NOMINAL"
+    )
+    with pytest.raises(SecurityException):
+        supervisor.process_task(payload)
+
+
+def test_supervisor_rejects_phi_in_status():
+    supervisor = SystemSupervisor(model_provider="mock")
+    payload = SystemTaskPayload(
+        task_id="TASK-01",
+        target_identifier="KEY-01",
+        primary_metric=12.0,
+        secondary_metric=4.0,
+        status_descriptor="Contact at 555-123-4567"
+    )
+    with pytest.raises(SecurityException):
+        supervisor.process_task(payload)

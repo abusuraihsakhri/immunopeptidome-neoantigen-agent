@@ -1,7 +1,6 @@
 """
 Prometheus Operational Metrics Exporter for immunopeptidome-neoantigen-agent.
 """
-import time
 from typing import Dict, Any
 
 class SystemMetricsCollector:
