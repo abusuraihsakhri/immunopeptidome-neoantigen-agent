@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Local rule-based task auditing demonstration. Not an HLA-binding or neoantigen predictor.">
+  <title>Immunopeptidome Agent · Audit Console</title>
+  <link rel="stylesheet" href="./web/styles.css">
+  <script src="./web/app.js" defer></script>
+</head>
+<body>
+  <main class="shell">
+    <header class="masthead">
+      <div>
+        <p class="eyebrow">RESEARCH SOFTWARE · DEMONSTRATION</p>
+        <h1>Immunopeptidome Agent</h1>
+        <p class="intro">Rule-based task audit console</p>
+      </div>
+      <a class="repo-link" href="https://github.com/abusuraihsakhri/immunopeptidome-neoantigen-agent" rel="noopener noreferrer">Source repository ↗</a>
+    </header>
+    <div class="notice" role="note"><strong>Scope:</strong> This tool demonstrates generic thresholds (primary &gt; 25; secondary &gt; 12), a critical flag, and descriptor matching. It does <strong>not</strong> predict HLA binding, peptide presentation, immunogenicity, or clinical risk. Use de-identified, synthetic inputs.</div>
+
+    <section class="stats" aria-label="Session summary">
+      <div class="stat"><small>Session evaluations</small><strong id="run-count">0</strong></div>
+      <div class="stat"><small>Alerts generated</small><strong id="alert-count">0</strong></div>
+      <div class="stat"><small>CSV rows ready</small><strong id="batch-count">0</strong></div>
+      <div class="stat"><small>Execution</small><strong id="mode-status">In-browser</strong></div>
+    </section>
+
+    <div class="layout">
+      <section class="panel" aria-labelledby="input-title">
+        <div class="panel-heading"><h2 id="input-title">Single task</h2><span>Example data</span></div>
+        <form id="audit-form">
+          <div class="row-fields">
+            <label>Task ID<input id="task_id" maxlength="120" required value="TASK-DEMO-01" autocomplete="off"></label>
+            <label>Target ID<input id="target_identifier" maxlength="120" required value="TARGET-EXAMPLE" autocomplete="off"></label>
+          </div>
+          <div class="row-fields">
+            <label>Primary metric<input id="primary_metric" type="number" step="any" required value="29.4"></label>
+            <label>Secondary metric<input id="secondary_metric" type="number" step="any" required value="14.8"></label>
+          </div>
+          <label>Status descriptor<input id="status_descriptor" maxlength="120" required value="DISCORDANT_ANOMALY"></label>
+          <label class="check"><input type="checkbox" id="is_critical_flag"> Mark critical (demo flag)</label>
+          <label>Execution mode<select id="execution-mode"><option value="local">Local preview · no server</option><option id="api-mode" value="api">Connected FastAPI · signed in-memory audit</option></select></label>
+          <button id="run-button" type="submit" class="primary">Evaluate task</button>
+        </form>
+      </section>
+      <section class="panel results" aria-labelledby="result-title">
+        <div class="panel-heading"><h2 id="result-title">Evaluation output</h2><button id="save-json" class="subtle" disabled type="button">Download JSON</button></div>
+        <pre id="output" tabindex="0" aria-label="Evaluation JSON output">No task evaluated yet. Enter example values and select Evaluate task.</pre>
+      </section>
+    </div>
+
+    <section class="panel batch" aria-labelledby="batch-title">
+      <div class="panel-heading"><h2 id="batch-title">Local CSV batch</h2><span>Up to 2,000 rows · 2 MiB</span></div>
+      <p>Upload a CSV with <code>task_id, target_identifier, primary_metric, secondary_metric, is_critical_flag, status_descriptor</code>. All processing stays in this browser, regardless of the single-task execution mode.</p>
+      <div class="batch-actions"><label class="file-label">Choose CSV file<input id="csv-file" type="file" accept=".csv,text/csv"></label><button id="save-csv" type="button" disabled>Download results CSV</button></div>
+    </section>
+    <p id="message" role="status" aria-live="polite">Local mode is ready.</p>
+    <footer>Generic demonstration rules only · No data persistence in the browser · FastAPI mode sends submitted task data to the server. The Python backend maintains an in-memory HMAC audit chain, not permanent records.</footer>
+  </main>
+</body>
+</html>

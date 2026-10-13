@@ -1,7 +1,4 @@
-"""
-Inference Engine supporting local Ollama, Claude, OpenAI, and deterministic Mock with Zero-PHI checks.
-"""
-from typing import Dict, Any, Optional
+"""Deterministic placeholder for optional model-provider integrations."""
 from .base import PHIGuard
 
 
@@ -11,21 +8,17 @@ class MockLLM:
 
     def invoke(self, prompt: str) -> str:
         PHIGuard.assert_no_phi(prompt)
-        return f"[{self.system_name} Deterministic Verification Engine]: Clinical & scientific analysis verified for query: '{prompt[:60]}...'. Parameters evaluated under wwPDB / IUPAC / OpenSMILES / ISAC Standards."
+        return (
+            f"[{self.system_name}] MOCK response only. "
+            "No language model or scientific validation was performed. "
+            f"Query: {prompt[:60]!r}"
+        )
 
 
 class LLMFactory:
-    """Creates configured LLM client instances with zero-PHI protection."""
+    """Return the deterministic placeholder; external model adapters are not implemented."""
 
     @staticmethod
     def create(provider: str = "mock", system_name: str = "Immunopeptidome Neoantigen Agent"):
-        prov = str(provider).lower()
-        if prov in ["mock", "deterministic", "test"]:
-            return MockLLM(system_name)
-        elif prov in ["ollama", "local"]:
-            return MockLLM(system_name)
-        elif prov in ["claude", "anthropic"]:
-            return MockLLM(system_name)
-        elif prov in ["openai", "gpt4"]:
-            return MockLLM(system_name)
+        # Other names are retained for backward compatibility but are not live providers.
         return MockLLM(system_name)

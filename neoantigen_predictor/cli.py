@@ -1,10 +1,8 @@
-"""
-Command-Line Interface for NeoAntigen-Predictor: NetMHCpan HLA-I/II Binding & Presentation Agent.
-"""
+"""Legacy domain coordinator CLI (generic threshold demonstration)."""
 import argparse
 import csv
-import json
 import sys
+from agents.csv_utils import parse_csv_bool
 from .models import FrontierPayload
 from .agents import NeoAntigenCoordinator
 
@@ -12,107 +10,86 @@ coordinator = NeoAntigenCoordinator()
 
 
 def main(argv=None):
-    parser = argparse.ArgumentParser(prog="immunopeptidome-neoantigen-agent", description="NeoAntigen-Predictor: NetMHCpan HLA-I/II Binding & Presentation Agent")
+    parser = argparse.ArgumentParser(prog="immunopeptidome-neoantigen-engine",
+                                     description="Experimental coordinator; no NetMHCpan model is bundled")
     subparsers = parser.add_subparsers(dest="command", required=True)
-
-    # Audit
-    p_audit = subparsers.add_parser("audit", help="Run single task evaluation")
-    p_audit.add_argument("--task-id", default="TASK-2026-001")
-    p_audit.add_argument("--target", default="TARGET-GEN-01")
-    p_audit.add_argument("--primary", type=float, default=29.4)
-    p_audit.add_argument("--secondary", type=float, default=15.1)
-    p_audit.add_argument("--critical", action="store_true")
-    p_audit.add_argument("--status", default="DISCORDANT")
-
-    # Chat
-    p_chat = subparsers.add_parser("chat", help="System configuration query")
-    p_chat.add_argument("query", nargs="+")
-
-    # Batch
-    p_batch = subparsers.add_parser("batch", help="Batch process CSV records")
-    p_batch.add_argument("-i", "--input", required=True)
-    p_batch.add_argument("-o", "--output", default="results.csv")
-
-    # Serve
-    p_serve = subparsers.add_parser("serve", help="Launch FastAPI REST server")
-    p_serve.add_argument("--host", default="127.0.0.1")
-    p_serve.add_argument("--port", type=int, default=8000)
-
+    audit = subparsers.add_parser("audit")
+    audit.add_argument("--task-id", default="TASK-2026-001")
+    audit.add_argument("--target", default="TARGET-GEN-01")
+    audit.add_argument("--primary", type=float, default=29.4)
+    audit.add_argument("--secondary", type=float, default=15.1)
+    audit.add_argument("--critical", action="store_true")
+    audit.add_argument("--status", default="DISCORDANT")
+    chat = subparsers.add_parser("chat")
+    chat.add_argument("query", nargs="+")
+    batch = subparsers.add_parser("batch")
+    batch.add_argument("-i", "--input", required=True)
+    batch.add_argument("-o", "--output", default="results.csv")
+    serve = subparsers.add_parser("serve")
+    serve.add_argument("--host", default="127.0.0.1")
+    serve.add_argument("--port", type=int, default=8000)
     args = parser.parse_args(argv)
 
     if args.command == "audit":
-        payload = FrontierPayload(
-            task_id=args.task_id,
-            target_identifier=args.target,
-            primary_metric=args.primary,
-            secondary_metric=args.secondary,
-            status_descriptor=args.status,
-            is_critical_flag=args.critical,
-        )
-        dossier = coordinator.process(payload)
-        print("=" * 80)
-        print(f"  NEOANTIGEN-PREDICTOR: NETMHCPAN HLA-I/II BINDING & PRESENTATION AGENT")
-        print(f"  Domain: Biomedical Scientific Discovery & Multi-Omics | Standard: Immune Epitope Database (IEDB) Guidelines")
-        print(f"  Task: {dossier['task_id']} | Status: [{dossier['overall_status']}] | Total Alerts: {dossier['total_alerts']}")
-        print("=" * 80)
-        for a in dossier["alerts"]:
-            print(f"\n  [{a['status']}] from {a['origin_agent']}:")
-            print(f"  Summary: {a['summary']}")
-            print(f"  Details: {a['technical_details']}")
-            print(f"  Action:  {a['actionable_remediation']}")
-        print("\n" + "=" * 80)
+        dossier = coordinator.process(FrontierPayload(
+            task_id=args.task_id, target_identifier=args.target,
+            primary_metric=args.primary, secondary_metric=args.secondary,
+            status_descriptor=args.status, is_critical_flag=args.critical,
+        ))
+        print(f"Demonstration task {dossier['task_id']}: {dossier['overall_status']}")
+        for alert in dossier["alerts"]:
+            print(f"{alert['origin_agent']}: {alert['summary']}")
         return 0
 
     if args.command == "chat":
-        ans = coordinator.query_supervisory_chat(" ".join(args.query))
-        print(f"\n[NeoAntigenCoordinator]:\n{ans}\n")
+        print(coordinator.query_supervisory_chat(" ".join(args.query)))
         return 0
 
     if args.command == "batch":
-        with open(args.input, mode="r", encoding="utf-8-sig") as f:
-            reader = csv.DictReader(f)
-            fieldnames = list(reader.fieldnames or [])
+        with open(args.input, "r", encoding="utf-8-sig", newline="") as infile:
+            reader = csv.DictReader(infile)
+            headers = list(reader.fieldnames or [])
+            if not headers or len(set(headers)) != len(headers):
+                raise ValueError("CSV headers must be present and unique")
+            mandatory = {"task_id", "target_identifier", "primary_metric", "secondary_metric",
+                         "status_descriptor", "is_critical_flag"}
+            if not mandatory.issubset(headers):
+                raise ValueError("Missing required CSV columns")
             rows = list(reader)
-
-        out_fields = fieldnames + ["overall_status", "total_alerts", "critical_count", "consensus_summary"]
-        out_rows = []
-        for r in rows:
-            payload = FrontierPayload(
-                task_id=r.get("task_id", "TASK-01"),
-                target_identifier=r.get("target_identifier", "TARGET-01"),
-                primary_metric=float(r.get("primary_metric", 15.0)),
-                secondary_metric=float(r.get("secondary_metric", 5.0)),
-                status_descriptor=r.get("status_descriptor", "NOMINAL"),
-                is_critical_flag=bool(r.get("is_critical_flag", False)),
-            )
-            dossier = coordinator.process(payload)
-            row_dict = dict(r)
-            row_dict["overall_status"] = dossier["overall_status"]
-            row_dict["total_alerts"] = dossier["total_alerts"]
-            row_dict["critical_count"] = dossier["critical_count"]
-            row_dict["consensus_summary"] = dossier["consensus_summary"]
-            out_rows.append(row_dict)
-
-        with open(args.output, mode="w", encoding="utf-8", newline="") as f:
-            writer = csv.DictWriter(f, fieldnames=out_fields)
+        fields = headers + [name for name in ("overall_status", "total_alerts", "critical_count", "consensus_summary")
+                            if name not in headers]
+        output = []
+        for line, row in enumerate(rows, 2):
+            if None in row:
+                raise ValueError(f"Row {line} has too many fields")
+            try:
+                dossier = coordinator.process(FrontierPayload(
+                    task_id=row["task_id"], target_identifier=row["target_identifier"],
+                    primary_metric=float(row["primary_metric"]),
+                    secondary_metric=float(row["secondary_metric"]),
+                    status_descriptor=row["status_descriptor"],
+                    is_critical_flag=parse_csv_bool(row["is_critical_flag"]),
+                ))
+            except (TypeError, ValueError) as error:
+                raise ValueError(f"Invalid CSV row {line}: {error}") from error
+            output.append(dict(row, **{key: dossier[key] for key in
+                                      ("overall_status", "total_alerts", "critical_count", "consensus_summary")}))
+        with open(args.output, "w", encoding="utf-8", newline="") as outfile:
+            writer = csv.DictWriter(outfile, fieldnames=fields)
             writer.writeheader()
-            writer.writerows(out_rows)
-        print(f"Processed {len(out_rows)} records -> {args.output}")
+            writer.writerows(output)
+        print(f"Processed {len(output)} records -> {args.output}")
         return 0
 
     if args.command == "serve":
-        try:
-            import uvicorn
-            from .server import create_app
-            app = create_app()
-            if app:
-                print(f"Starting NeoAntigen-Predictor: NetMHCpan HLA-I/II Binding & Presentation Agent on http://{args.host}:{args.port}")
-                uvicorn.run(app, host=args.host, port=args.port)
-        except ImportError:
-            print("FastAPI / uvicorn not installed. Run 'pip install fastapi uvicorn'")
-            return 1
-
-    return 0
+        import uvicorn
+        from .server import create_app
+        app = create_app()
+        if app is None:
+            raise RuntimeError("Install optional API dependencies first")
+        uvicorn.run(app, host=args.host, port=args.port)
+        return 0
+    return 1
 
 
 if __name__ == "__main__":
