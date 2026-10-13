@@ -1,39 +1,46 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "Immunopeptidome Neoantigen Engine API",
-    "description": "Enterprise Distributed Component Platform (Clinical & Cryptographic AI) adhering to CAP / CLSI / NIST Standards.",
-    "version": "3.0.0-ENTERPRISE",
-    "contact": {
-      "name": "Dr. Abu Suraih Sakhri",
-      "url": "https://github.com/abusuraihsakhri"
-    }
+    "title": "Immunopeptidome Rule Demonstration API",
+    "version": "2.0.1",
+    "description": "Generic synthetic thresholds; no NetMHCpan model or clinically validated inference."
   },
   "paths": {
-    "/health": {
+    "/": {
       "get": {
-        "summary": "Health and metadata check",
+        "summary": "Browser console",
         "responses": {
           "200": {
-            "description": "System optimal"
+            "description": "HTML console"
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "summary": "Health and runtime metadata",
+        "responses": {
+          "200": {
+            "description": "JSON status"
           }
         }
       }
     },
     "/metrics": {
       "get": {
-        "summary": "Prometheus operational metrics",
+        "summary": "In-memory task and audit counts (JSON)",
         "responses": {
           "200": {
-            "description": "Prometheus text metrics"
+            "description": "JSON counters"
           }
         }
       }
     },
     "/api/audit": {
       "post": {
-        "summary": "Dispatch task payload across specialized workers",
+        "summary": "Evaluate demonstration task",
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
@@ -56,6 +63,9 @@
                   },
                   "is_critical_flag": {
                     "type": "boolean"
+                  },
+                  "attributes": {
+                    "type": "object"
                   }
                 },
                 "required": [
@@ -69,44 +79,30 @@
         },
         "responses": {
           "200": {
-            "description": "Consensus dossier with HMAC signature"
+            "description": "Rule-based dossier, signed in-memory"
+          },
+          "422": {
+            "description": "Invalid or potentially identifying input"
           }
         }
       }
     },
     "/api/chat": {
       "post": {
-        "summary": "Air-gapped supervisory conversational assistant",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "query": {
-                    "type": "string"
-                  }
-                },
-                "required": [
-                  "query"
-                ]
-              }
-            }
-          }
-        },
+        "summary": "Mock response",
         "responses": {
           "200": {
-            "description": "Supervisory response"
+            "description": "Deterministic placeholder response"
           }
         }
       }
     },
     "/api/audit/logs": {
       "get": {
-        "summary": "Retrieve and cryptographically verify HMAC audit trail",
+        "summary": "Audit-chain entries and signature verification",
         "responses": {
           "200": {
-            "description": "Cryptographic audit trail"
+            "description": "In-memory entries"
           }
         }
       }

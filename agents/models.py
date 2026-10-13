@@ -1,11 +1,7 @@
-"""
-Pydantic v2 schemas and data definitions for Immunopeptidome Neoantigen Agent.
-Domain: AI Drug Discovery, Structural Biology & Wet-Lab Robotics
-Standard: wwPDB / IUPAC / OpenSMILES / ISAC Standards
-"""
+"""Pydantic models for the generic rule-based audit workflow."""
 import datetime
 from enum import Enum
-from typing import Dict, Any, List, Optional
+from typing import Any, Dict, List
 from pydantic import BaseModel, Field
 
 
@@ -22,13 +18,13 @@ class SystemIntegrityStatus(str, Enum):
 
 
 class SystemTaskPayload(BaseModel):
-    task_id: str = Field(..., description="Unique task / case identifier")
-    target_identifier: str = Field(..., description="Entity, patient key, or genomic/cryptographic target")
-    primary_metric: float = Field(..., description="Primary domain measurement or score")
-    secondary_metric: float = Field(default=0.0, description="Secondary kinetic or confidence score")
-    status_descriptor: str = Field(default="NOMINAL", description="Status code or phenotype descriptor")
-    is_critical_flag: bool = Field(default=False, description="Emergency escalation or high priority trigger")
-    attributes: Dict[str, Any] = Field(default_factory=dict, description="Metadata key-value pairs")
+    task_id: str = Field(..., min_length=1, max_length=120)
+    target_identifier: str = Field(..., min_length=1, max_length=120)
+    primary_metric: float = Field(..., allow_inf_nan=False)
+    secondary_metric: float = Field(default=0.0, allow_inf_nan=False)
+    status_descriptor: str = Field(default="NOMINAL", min_length=1, max_length=120)
+    is_critical_flag: bool = False
+    attributes: Dict[str, Any] = Field(default_factory=dict)
     timestamp: str = Field(default_factory=lambda: datetime.datetime.now(datetime.timezone.utc).isoformat())
 
 
@@ -39,7 +35,7 @@ class AgentAlert(BaseModel):
     summary: str
     technical_details: str
     actionable_remediation: str
-    standard_reference: str = "wwPDB / IUPAC / OpenSMILES / ISAC Standards"
+    standard_reference: str = "Demonstration thresholds (not clinical reference ranges)"
     timestamp: str = Field(default_factory=lambda: datetime.datetime.now(datetime.timezone.utc).isoformat())
 
     def to_dict(self) -> Dict[str, Any]:
@@ -49,7 +45,7 @@ class AgentAlert(BaseModel):
 class ConsensusDossier(BaseModel):
     dossier_id: str
     system_slug: str = "immunopeptidome-neoantigen-agent"
-    domain: str = "AI Drug Discovery, Structural Biology & Wet-Lab Robotics"
+    domain: str = "Generic rule-based audit demonstration"
     task_id: str
     target_identifier: str
     overall_urgency: UrgencyLevel
@@ -57,7 +53,7 @@ class ConsensusDossier(BaseModel):
     total_alerts: int
     critical_alerts_count: int
     alerts: List[AgentAlert]
-    standard_reference: str = "wwPDB / IUPAC / OpenSMILES / ISAC Standards"
+    standard_reference: str = "Demonstration thresholds (not clinical reference ranges)"
     consensus_summary: str
     audit_hash: str
     timestamp: str = Field(default_factory=lambda: datetime.datetime.now(datetime.timezone.utc).isoformat())

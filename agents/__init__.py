@@ -1,7 +1,2 @@
-"""
-Immunopeptidome Neoantigen Agent — Enterprise Automated Analytical Suite.
-Domain: AI Drug Discovery, Structural Biology & Wet-Lab Robotics
-Standard: wwPDB / IUPAC / OpenSMILES / ISAC Standards
-
-"""
-__version__ = "3.0.0-ENTERPRISE"
+"""Generic audit demonstration and experimental immunopeptidome scaffolding."""
+__version__ = "2.0.1"

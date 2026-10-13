@@ -1,66 +1,59 @@
-"""
-Distributed Component Coordination & Executive Hierarchy for NeoAntigen-Predictor: NetMHCpan HLA-I/II Binding & Presentation Agent.
-Domain: Biomedical Scientific Discovery & Multi-Omics
-"""
+"""Legacy named coordinator; no peptide-HLA models are implemented."""
+import json
+import math
 import uuid
-from typing import Dict, Any, List, Optional
+from typing import Any, Dict, List
+from agents.base import PHIGuard
 from .models import FrontierPayload, AgentTelemetryAlert, ExecutionStatus
 from .engine import FrontierDomainEngine
 
 
 class HLABindingAffinityAgent:
-    """Specialized Sub-Agent 1: Primary Parameter & Integrity Auditor."""
+    """Legacy API name: audits a synthetic scalar rather than binding affinity."""
+
     def audit(self, payload: FrontierPayload) -> List[AgentTelemetryAlert]:
-        alerts = []
-        res = FrontierDomainEngine.evaluate_primary_parameter(payload.primary_metric)
-        if res:
-            alerts.append(AgentTelemetryAlert(
-                alert_id=str(uuid.uuid4())[:8],
-                origin_agent="HLABindingAffinityAgent",
-                status=ExecutionStatus.ELEVATED_RISK,
-                summary=res["summary"],
-                technical_details=res["details"],
-                actionable_remediation=res["remediation"],
-            ))
-        return alerts
+        result = FrontierDomainEngine.evaluate_primary_parameter(payload.primary_metric)
+        if result is None:
+            return []
+        return [AgentTelemetryAlert(
+            alert_id=uuid.uuid4().hex[:8], origin_agent="HLABindingAffinityAgent",
+            status=ExecutionStatus.ELEVATED_RISK,
+            summary=result["summary"], technical_details=result["details"],
+            actionable_remediation=result["remediation"],
+        )]
 
 
 class TAPCleavagePredictorAgent:
-    """Specialized Sub-Agent 2: Critical Kinetics & Security Safeguard."""
+    """Legacy API name: simple threshold rule, not a cleavage predictor."""
+
     def audit(self, payload: FrontierPayload) -> List[AgentTelemetryAlert]:
-        alerts = []
-        res = FrontierDomainEngine.evaluate_secondary_kinetics(payload.secondary_metric, payload.is_critical_flag)
-        if res:
-            alerts.append(AgentTelemetryAlert(
-                alert_id=str(uuid.uuid4())[:8],
-                origin_agent="TAPCleavagePredictorAgent",
-                status=ExecutionStatus.CRITICAL_INTERVENTION if payload.is_critical_flag else ExecutionStatus.ELEVATED_RISK,
-                summary=res["summary"],
-                technical_details=res["details"],
-                actionable_remediation=res["remediation"],
-            ))
-        return alerts
+        result = FrontierDomainEngine.evaluate_secondary_kinetics(payload.secondary_metric, payload.is_critical_flag)
+        if result is None:
+            return []
+        return [AgentTelemetryAlert(
+            alert_id=uuid.uuid4().hex[:8], origin_agent="TAPCleavagePredictorAgent",
+            status=ExecutionStatus.CRITICAL_INTERVENTION if payload.is_critical_flag else ExecutionStatus.ELEVATED_RISK,
+            summary=result["summary"], technical_details=result["details"],
+            actionable_remediation=result["remediation"],
+        )]
 
 
 class ImmunogenicityRankingAgent:
-    """Specialized Sub-Agent 3: Protocol Conformance & Anomaly Triager."""
+    """Legacy API name: matches descriptor keywords, does not rank peptides."""
+
     def audit(self, payload: FrontierPayload) -> List[AgentTelemetryAlert]:
-        alerts = []
-        res = FrontierDomainEngine.audit_specification_conformance(payload.status_descriptor, payload.attributes)
-        if res:
-            alerts.append(AgentTelemetryAlert(
-                alert_id=str(uuid.uuid4())[:8],
-                origin_agent="ImmunogenicityRankingAgent",
-                status=ExecutionStatus.ELEVATED_RISK,
-                summary=res["summary"],
-                technical_details=res["details"],
-                actionable_remediation=res["remediation"],
-            ))
-        return alerts
+        result = FrontierDomainEngine.audit_specification_conformance(payload.status_descriptor, payload.attributes)
+        if result is None:
+            return []
+        return [AgentTelemetryAlert(
+            alert_id=uuid.uuid4().hex[:8], origin_agent="ImmunogenicityRankingAgent",
+            status=ExecutionStatus.ELEVATED_RISK,
+            summary=result["summary"], technical_details=result["details"],
+            actionable_remediation=result["remediation"],
+        )]
 
 
 class NeoAntigenCoordinator:
-    """Executive Coordinator & Air-Gapped Supervisory Intelligence."""
     def __init__(self):
         self.sub_1 = HLABindingAffinityAgent()
         self.sub_2 = TAPCleavagePredictorAgent()
@@ -68,43 +61,45 @@ class NeoAntigenCoordinator:
         self.execution_ledger: Dict[str, Dict[str, Any]] = {}
 
     def process(self, payload: FrontierPayload) -> Dict[str, Any]:
-        all_alerts: List[AgentTelemetryAlert] = []
-        all_alerts.extend(self.sub_1.audit(payload))
-        all_alerts.extend(self.sub_2.audit(payload))
-        all_alerts.extend(self.sub_3.audit(payload))
+        for value in (payload.primary_metric, payload.secondary_metric):
+            if not math.isfinite(value):
+                raise ValueError("Metrics must be finite numbers")
+        for value in (payload.task_id, payload.target_identifier, payload.status_descriptor):
+            PHIGuard.assert_no_phi(value)
+        attrs = json.dumps(payload.attributes, ensure_ascii=False, sort_keys=True, allow_nan=False)
+        if len(attrs) > 16384:
+            raise ValueError("attributes exceeds the 16 KiB input limit")
+        PHIGuard.assert_no_phi(attrs)
 
-        crit_count = sum(1 for a in all_alerts if a.status == ExecutionStatus.CRITICAL_INTERVENTION)
-        warn_count = sum(1 for a in all_alerts if a.status == ExecutionStatus.ELEVATED_RISK)
+        alerts: List[AgentTelemetryAlert] = []
+        for agent in (self.sub_1, self.sub_2, self.sub_3):
+            alerts.extend(agent.audit(payload))
 
-        if crit_count > 0:
-            status = ExecutionStatus.CRITICAL_INTERVENTION
-        elif warn_count > 0:
-            status = ExecutionStatus.ELEVATED_RISK
-        else:
-            status = ExecutionStatus.NOMINAL
-
+        crit_count = sum(a.status == ExecutionStatus.CRITICAL_INTERVENTION for a in alerts)
+        warn_count = sum(a.status == ExecutionStatus.ELEVATED_RISK for a in alerts)
+        status = (ExecutionStatus.CRITICAL_INTERVENTION if crit_count else
+                  ExecutionStatus.ELEVATED_RISK if warn_count else ExecutionStatus.NOMINAL)
         dossier = {
             "system": "immunopeptidome-neoantigen-agent",
-            "domain": "Biomedical Scientific Discovery & Multi-Omics",
+            "domain": "Synthetic rule demonstration",
             "task_id": payload.task_id,
             "target_identifier": payload.target_identifier,
             "overall_status": status.value,
-            "total_alerts": len(all_alerts),
+            "total_alerts": len(alerts),
             "critical_count": crit_count,
             "warning_count": warn_count,
-            "alerts": [a.to_dict() for a in all_alerts],
-            "standard_specification": "Immune Epitope Database (IEDB) Guidelines",
-            "consensus_summary": f"Consensus evaluation completed across 3 sub-agents with status [{status.value}].",
+            "alerts": [alert.to_dict() for alert in alerts],
+            "standard_specification": "No validated immunopeptidomics specification is implemented",
+            "consensus_summary": f"Demonstration rules evaluated: {len(alerts)} alerts; {status.value}.",
         }
-
         self.execution_ledger[payload.task_id] = dossier
         return dossier
 
     def query_supervisory_chat(self, query: str) -> str:
+        PHIGuard.assert_no_phi(query)
         q = query.strip().lower()
         if "status" in q or "ledger" in q:
-            return f"NeoAntigen-Predictor: NetMHCpan HLA-I/II Binding & Presentation Agent currently managing {len(self.execution_ledger)} execution tasks in air-gapped memory."
-        elif "standard" in q or "spec" in q:
-            return "Active runtime operating strictly according to Immune Epitope Database (IEDB) Guidelines specifications."
-        else:
-            return f"NeoAntigen-Predictor: NetMHCpan HLA-I/II Binding & Presentation Agent executive coordinator online. Zero-telemetry on-premises surveillance active."
+            return f"Legacy demonstration ledger contains {len(self.execution_ledger)} tasks."
+        if "standard" in q or "spec" in q:
+            return "No NetMHCpan integration or validated IEDB specifications are implemented."
+        return "This is a fixed-response demonstration coordinator; no predictive models are active."

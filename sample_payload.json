@@ -1,12 +1,11 @@
 {
-  "task_id": "TASK-2026-8801",
-  "target_identifier": "TARGET-PQC-BIO-01",
+  "task_id": "TASK-DEMO-1",
+  "target_identifier": "TARGET-EXAMPLE",
   "primary_metric": 32.4,
   "secondary_metric": 18.2,
   "status_descriptor": "DISCORDANT_ANOMALY",
   "is_critical_flag": true,
   "attributes": {
-    "confidence_ratio": 0.88,
-    "protocol_standard": "Immune Epitope Database (IEDB) Guidelines"
+    "scenario": "synthetic threshold demonstration"
   }
 }

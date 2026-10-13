@@ -1,12 +1,8 @@
-"""
-Data Models & Telemetry Definitions for NeoAntigen-Predictor: NetMHCpan HLA-I/II Binding & Presentation Agent.
-Domain: Biomedical Scientific Discovery & Multi-Omics
-Standard: Immune Epitope Database (IEDB) Guidelines
-"""
+"""Dataclasses for the legacy synthetic threshold coordinator."""
 import datetime
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Dict, Optional, Any
+from typing import Any, Dict
 
 
 class ExecutionStatus(str, Enum):
@@ -35,7 +31,7 @@ class AgentTelemetryAlert:
     summary: str
     technical_details: str
     actionable_remediation: str
-    standard_reference: str = "Immune Epitope Database (IEDB) Guidelines"
+    standard_reference: str = "Synthetic demonstration thresholds"
     timestamp: str = field(default_factory=lambda: datetime.datetime.now(datetime.timezone.utc).isoformat())
 
     def to_dict(self) -> Dict[str, Any]:
