@@ -30,7 +30,10 @@ jobs:
         run: |
           python -m compileall -q agents neoantigen_predictor cli.py simulator.py enrichment.py
           python -m pytest -q
+          ruff check --select E9,F63,F7,F82 .
       - name: Browser JavaScript syntax
-        run: node --check web/app.js
+        run: |
+          node --check web/app.js
+          node --test tests/browser.test.cjs
       - name: Packaging smoke test
         run: immunopeptidome-neoantigen-engine audit --task-id CI --target DEMO --primary 1 --secondary 1 --status NOMINAL

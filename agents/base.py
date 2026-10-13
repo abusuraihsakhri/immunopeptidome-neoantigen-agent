@@ -71,7 +71,7 @@ class AuditTrail:
         self.logs: List[Dict[str, Any]] = []
 
     def _signature(self, entry: Dict[str, Any]) -> str:
-        message = "|".join(str(entry[key]) for key in self.SIGNED_FIELDS)
+        message = json.dumps({key: entry[key] for key in self.SIGNED_FIELDS}, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
         return hmac.new(self.secret_key, message.encode("utf-8"), hashlib.sha256).hexdigest()
 
     def log(self, actor: str, actor_tier: str, event_type: str, details: Dict[str, Any]) -> Dict[str, Any]:
